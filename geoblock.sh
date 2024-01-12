@@ -31,8 +31,13 @@ function test_file_exists {
 }
 
 function check_if_iptables_exists {
-  echo "[INFO] Checking if iptables $1 rule exists for $2."
-  _ipt_lines=$(iptables -L $1 | grep $2 | wc -l)
+  if [[ ${_TYPE} == ipv6 ]]; then 
+    echo "[INFO] Checking if ip6tables $1 rule exists for $2."
+    _ipt_lines=$(ip6tables -L $1 | grep $2 | wc -l)
+  else
+    echo "[INFO] Checking if iptables $1 rule exists for $2."
+    _ipt_lines=$(iptables -L $1 | grep $2 | wc -l)
+  fi
 }
 
 function get_ipv4_or_ipv6 {
@@ -119,20 +124,28 @@ function set_ipset {
 
     _CHAIN="INPUT"
     _ipt_lines=0
-    check_if_iptables_exists $_CHAIN $_IPSET_NAME
+    check_if_iptables_exists $_CHAIN $_IPSET_NAME $_TYPE
     if [ $_ipt_lines == 0 ]; then 
       echo "[INFO] Creating IPtables $_CHAIN rule of $_IPSET_NAME"
-      iptables -I INPUT -m set --match-set $_IPSET_NAME src -j DROP
+      if [[ ${_TYPE} == ipv6 ]]; then 
+        ip6tables -I INPUT -m set --match-set $_IPSET_NAME src -j DROP
+      else
+        iptables -I INPUT -m set --match-set $_IPSET_NAME src -j DROP
+      fi
     else
       echo "[INFO] IPtables INPUT rule already exists for set $_IPSET_NAME"
     fi
 
     _CHAIN="OUTPUT"
     _ipt_lines=0
-    check_if_iptables_exists $_CHAIN $_IPSET_NAME
+    check_if_iptables_exists $_CHAIN $_IPSET_NAME $_TYPE
     if [ $_ipt_lines == 0 ]; then 
       echo "[INFO] Creating IPtables $_CHAIN rule of $_IPSET_NAME"
-      iptables -I OUTPUT -m set --match-set $_IPSET_NAME dst -j DROP
+      if [[ ${_TYPE} == ipv6 ]]; then 
+        ip6tables -I OUTPUT -m set --match-set $_IPSET_NAME dst -j DROP
+      else
+        iptables -I OUTPUT -m set --match-set $_IPSET_NAME dst -j DROP
+      fi
     else 
       echo "[INFO] IPtables OUTPUT rule already exists for set $_IPSET_NAME"
     fi
